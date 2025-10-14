@@ -1,0 +1,288 @@
+<!--
+Top-Down Shooter with XP & Fixed Collision
+- Player now has fixed numeric coordinates for correct collision detection.
+- Enemies spawn slower and move slower at early levels.
+- Player gains XP = enemy maxHP × 10.
+- XP requirement: 100 × level^1.5.
+- Max level = 50 (~30 minutes).
+- Each level grants +1 bullet.
+- Enemy HP scales with player level.
+- Player & Enemy have health bars.
+- Player XP bar + XP text shown.
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Top-Down Shooter with XP</title>
+  <style>
+    html,body{height:100%;margin:0;background:#111;color:#fff;font-family:Arial}
+    #gameCanvas{display:block;background:linear-gradient(#0b1220,#06101a);cursor:none}
+    #ui{position:fixed;left:12px;top:12px;z-index:10}
+    .hint{opacity:0.9;font-size:14px}
+    #scoreBox{background:rgba(0,0,0,0.5);padding:8px 12px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui">
+    <div id="scoreBox">
+      <div>Score: <span id="score">0</span></div>
+      <div>HP: <span id="hp">10</span></div>
+      <div>Level: <span id="level">1</span></div>
+      <div>XP: <span id="xp">0</span>/<span id="xpNeed">100</span></div>
+      <div class="hint">Move mouse to aim — Left click to shoot — Press R to restart</div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    // === Âm nhạc nền ===
+const bgMusic = new Audio("file:///D:/meme/01. Age of War - Theme Song.mp3"); // ← đổi "music.mp3" thành tên file thật, VD: nen.mp3
+bgMusic.loop = true;   // lặp lại mãi mãi
+bgMusic.volume = 0.5;  // âm lượng (0.0 = nhỏ, 1.0 = to)
+
+    function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; player.x = canvas.width/2; player.y = canvas.height/2; }
+    window.addEventListener('resize', resize);
+
+    const player = { x: 0, y: 0, radius: 40, color: '#61dafb'};
+    resize();
+    let playerAngle = 0; 
+
+    const playerImg = new Image();
+    
+
+playerImg.src = "file:///D:/meme/nguy%C3%AAn%20li%E1%BB%87u/senti.png";
+const enemyImg = new Image();
+enemyImg.src = "file:///D:/meme/download (9).png";
+// === ẢNH NỀN ===
+const backgroundImg = new Image();
+backgroundImg.src = "file:///D:/meme/128bf6ab-39e6-4f73-86d8-158c5bfdb914.png"; // 👉 đổi tên đúng file ảnh bạn dùng
+backgroundImg.onload = () => console.log("✅ Background image loaded");
+backgroundImg.onerror = () => console.error("❌ Background image failed to load");
+
+    const mouse = { x: canvas.width/2, y: canvas.height/2};
+    window.addEventListener('mousemove', e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+
+    
+    playerAngle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+});
+
+
+
+    const bullets = [];
+    window.addEventListener('mousedown', e => { if (e.button === 0 && !gameOver) shoot(mouse.x, mouse.y); });
+// Khi click chuột lần đầu thì bật nhạc nền
+window.addEventListener('mousedown', () => {
+  if (bgMusic.paused) {
+    bgMusic.play().catch(err => {
+      console.log("Trình duyệt chặn tự động phát nhạc:", err);
+    });
+  }
+});
+
+    function shoot(targetX, targetY){
+      const sx = player.x;
+      const sy = player.y;
+      const angle = Math.atan2(targetY - sy, targetX - sx);
+      const spread = Math.PI/16;
+      const numBullets = level;
+      for(let i=0;i<numBullets;i++){
+        const offset = (i - (numBullets-1)/2) * spread;
+        const ang = angle + offset;
+        bullets.push({ x: sx + Math.cos(ang)*player.radius, y: sy + Math.sin(ang)*player.radius, vx: Math.cos(ang)*7, vy: Math.sin(ang)*7, r:6 });
+      }
+    }
+
+    const enemies = [];
+    let spawnTimer = 0;
+    let spawnInterval = 120;
+    let score = 0;
+    let hp = 10;
+    let gameOver = false;
+    let level = 1;
+    let xp = 0;
+    let xpNeed = 100;
+
+    function spawnEnemy(){
+      const side = Math.floor(Math.random()*4);
+      let x,y;
+      if(side===0){ x = Math.random()*canvas.width; y = -20; }
+      if(side===1){ x = canvas.width + 20; y = Math.random()*canvas.height; }
+      if(side===2){ x = Math.random()*canvas.width; y = canvas.height + 20; }
+      if(side===3){ x = -20; y = Math.random()*canvas.height; }
+      const speedFactor = 0.4 + (level/50)*1.0;
+      const baseSpeed = (0.3 + Math.random()*0.3) * speedFactor;
+      const enemyHP = 1 + Math.floor(level/2);
+      enemies.push({ x, y, r: 14, speed: baseSpeed, hp: enemyHP, maxHp: enemyHP, color: '#ff6b6b' });
+    }
+
+    function dist2(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return dx*dx+dy*dy; }
+
+    function update(){
+      if(!gameOver){
+        spawnTimer++;
+        if(spawnTimer >= spawnInterval){
+          spawnTimer = 0;
+          spawnEnemy();
+          if(spawnInterval > 40) spawnInterval--; 
+        }
+
+        for(let i=bullets.length-1;i>=0;i--){
+          const b=bullets[i]; b.x+=b.vx; b.y+=b.vy;
+          if(b.x<-50||b.x>canvas.width+50||b.y<-50||b.y>canvas.height+50) bullets.splice(i,1);
+        }
+
+        for(let i=enemies.length-1;i>=0;i--){
+          const e=enemies[i];
+          const dx = player.x - e.x, dy = player.y - e.y;
+          const ang = Math.atan2(dy, dx);
+          e.x += Math.cos(ang)*e.speed;
+          e.y += Math.sin(ang)*e.speed;
+
+          if(dist2(e,player) < (e.r+player.radius+5)**2){
+            hp -= 1; 
+            updateUI();
+            enemies.splice(i,1);
+            if(hp<=0){ gameOver=true; }
+            continue;
+          }
+
+          for(let j=bullets.length-1;j>=0;j--){
+            const b=bullets[j];
+            if(dist2(e,b) < (e.r+b.r)**2){
+              bullets.splice(j,1);
+              e.hp -= 1;
+              if(e.hp<=0){ 
+                score+=10; 
+                gainXP(e.maxHp*10);
+                enemies.splice(i,1); 
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    function xpRequiredForLevel(lvl){
+      return Math.floor(100 * Math.pow(lvl,1.5));
+    }
+
+    function gainXP(amount){
+      if(level>=50) return;
+      xp += amount;
+      if(xp >= xpNeed){
+        while(xp >= xpNeed && level<50){
+          xp -= xpNeed;
+          level++;
+          xpNeed = xpRequiredForLevel(level);
+        }
+      }
+      updateUI();
+    }
+
+    function updateUI(){
+      document.getElementById('score').innerText=score;
+      document.getElementById('hp').innerText=hp;
+      document.getElementById('level').innerText=level;
+      document.getElementById('xp').innerText=xp;
+      document.getElementById('xpNeed').innerText=xpNeed;
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // Vẽ ảnh nền (toàn màn hình)
+if (backgroundImg.complete && backgroundImg.naturalWidth > 0) {
+  ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+  // Làm nền tối hơn (lớp phủ mờ)
+ctx.fillStyle = "rgba(0, 0, 0, 0.4)"; // số 0.4 = độ mờ (0 là trong suốt, 1 là đen hẳn)
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+} else {
+  // Nếu ảnh chưa load, tô nền màu tạm
+  ctx.fillStyle = "#0b1220";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+      
+ctx.save();
+ctx.translate(player.x, player.y);   
+ctx.rotate(playerAngle - Math.PI / 2);
+          
+ctx.drawImage(
+playerImg,
+  -player.radius,
+  -player.radius,
+  player.radius * 2,
+  player.radius * 2
+);
+ctx.restore();
+
+drawPlayerHPBar();
+      drawPlayerXPBar();
+
+      for(const b of bullets){ ctx.beginPath(); ctx.fillStyle='#ffee90'; ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); ctx.closePath(); }
+
+      for(const e of enemies){
+      ctx.drawImage(enemyImg, e.x - e.r, e.y - e.r, e.r * 2, e.r * 2);
+
+
+enemyImg.onload = () => console.log("✅ Enemy image loaded");
+enemyImg.onerror = () => console.log("❌ Enemy image not found or blocked");
+
+
+        ctx.drawImage(enemyImg, e.x - e.r * 1.3, e.y - e.r * 1.3, e.r * 2.6, e.r * 2.6);
+
+        const pw=20, ph=4;
+        ctx.fillStyle='rgba(0,0,0,0.6)';
+        ctx.fillRect(e.x - pw/2, e.y - e.r - 8, pw, ph);
+        ctx.fillStyle='#8be26b';
+        ctx.fillRect(e.x - pw/2 + 1, e.y - e.r - 7, (pw-2)*(e.hp/e.maxHp), ph-2);
+      }
+
+      ctx.beginPath(); ctx.strokeStyle='#fff'; ctx.arc(mouse.x,mouse.y,8,0,Math.PI*2); ctx.stroke(); ctx.closePath();
+      ctx.beginPath(); ctx.fillStyle='#fff'; ctx.arc(mouse.x,mouse.y,2.5,0,Math.PI*2); ctx.fill(); ctx.closePath();
+
+      if(gameOver){
+        ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle='#fff'; ctx.font='bold 40px Arial'; ctx.textAlign='center';
+        ctx.fillText('Game Over',canvas.width/2,canvas.height/2);
+      if (!bgMusic.paused) bgMusic.pause(); }
+    }
+
+
+    function drawPlayerHPBar(){
+      const maxHP=10;
+      const barW=150, barH=12;
+      const x=canvas.width/2 - barW/2, y=canvas.height/2 + player.radius+20;
+      ctx.fillStyle='rgba(0,0,0,0.6)';
+      ctx.fillRect(x,y,barW,barH);
+      ctx.fillStyle='#61ff61';
+      ctx.fillRect(x+1,y+1,(barW-2)*(hp/maxHP),barH-2);
+    }
+
+    function drawPlayerXPBar(){
+      const barW=150, barH=10;
+      const x=canvas.width/2 - barW/2, y=canvas.height/2 + player.radius+40;
+      ctx.fillStyle='rgba(0,0,0,0.6)';
+      ctx.fillRect(x,y,barW,barH);
+      ctx.fillStyle='#4fa0ff';
+      ctx.fillRect(x+1,y+1,(barW-2)*(xp/xpNeed),barH-2);
+    }
+
+    function loop(){ update(); draw(); requestAnimationFrame(loop); }
+    loop();
+
+    window.addEventListener('keydown',e=>{ if(e.key==='r'||e.key==='R') restart(); });
+    function restart(){ score=0;hp=10;level=1;xp=0;xpNeed=100;spawnInterval=120;enemies.length=0;bullets.length=0;gameOver=false; updateUI(); }
+
+    updateUI();
+  </script>
+</body>
+</html>
