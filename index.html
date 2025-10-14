@@ -41,7 +41,7 @@ Top-Down Shooter with XP & Fixed Collision
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     // === Âm nhạc nền ===
-const bgMusic = new Audio("meme/01. Age of War - Theme Song.mp3"); // ← đổi "music.mp3" thành tên file thật, VD: nen.mp3
+const bgMusic = new Audio("01. Age of War - Theme Song.mp3"); // ← đổi "music.mp3" thành tên file thật, VD: nen.mp3
 bgMusic.loop = true;   // lặp lại mãi mãi
 bgMusic.volume = 0.5;  // âm lượng (0.0 = nhỏ, 1.0 = to)
 
@@ -55,12 +55,12 @@ bgMusic.volume = 0.5;  // âm lượng (0.0 = nhỏ, 1.0 = to)
     const playerImg = new Image();
     
 
-playerImg.src = "meme/nguy%C3%AAn%20li%E1%BB%87u/senti.png";
+playerImg.src = "nguy%C3%AAn%20li%E1%BB%87u/senti.png";
 const enemyImg = new Image();
-enemyImg.src = "meme/download (9).png";
+enemyImg.src = "download (9).png";
 // === ẢNH NỀN ===
 const backgroundImg = new Image();
-backgroundImg.src = "meme/128bf6ab-39e6-4f73-86d8-158c5bfdb914.png"; // 👉 đổi tên đúng file ảnh bạn dùng
+backgroundImg.src = "128bf6ab-39e6-4f73-86d8-158c5bfdb914.png"; // 👉 đổi tên đúng file ảnh bạn dùng
 backgroundImg.onload = () => console.log("✅ Background image loaded");
 backgroundImg.onerror = () => console.error("❌ Background image failed to load");
 
