@@ -28,6 +28,19 @@ Top-Down Shooter with XP & Fixed Collision
 <body>
   <canvas id="gameCanvas"></canvas>
   <div id="ui">
+    <script>
+  // 1. Tạo âm thanh từ file MP3
+  const audio = new Audio('01. Age of War - Theme Song.mp3');
+
+  // 2. Khi click vào màn hình, âm thanh sẽ phát
+  document.addEventListener('click', () => {
+    audio.play();
+  });
+
+  // 3. Lặp lại âm thanh liên tục
+  audio.loop = true;
+</script>
+
     <div id="scoreBox">
       <div>Score: <span id="score">0</span></div>
       <div>HP: <span id="hp">10</span></div>
@@ -284,5 +297,5 @@ enemyImg.onerror = () => console.log("❌ Enemy image not found or blocked");
 
     updateUI();
   </script>
-</body>
+</>
 </html>
